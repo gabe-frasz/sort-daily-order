@@ -1,0 +1,972 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light">
+  <meta name="theme-color" content="#f5f5f7">
+  <title>Daily</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='18' fill='%23007aff'/%3E%3Cpath d='M20 33l8 8 16-18' fill='none' stroke='white' stroke-width='6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+
+    :root {
+      --bg: #f5f5f7;
+      --label: #1d1d1f;
+      --secondary: #6e6e73;
+      --tertiary: #a1a1a6;
+      --fill: rgba(118, 118, 128, .12);
+      --separator: rgba(60, 60, 67, .12);
+      --blue: #007aff;
+      --green: #34c759;
+      --red: #ff3b30;
+      --card: rgba(255, 255, 255, .72);
+      --radius: 28px;
+      --inset: 6px;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+      --spring: cubic-bezier(.34, 1.56, .64, 1);
+
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI Variable Text", "Segoe UI", system-ui, Roboto, "Helvetica Neue", Arial, sans-serif;
+      font-size: 17px;
+      color: var(--label);
+      background: var(--bg);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+    }
+
+    html, body { margin: 0; }
+    body { min-height: 100vh; min-height: 100dvh; -webkit-tap-highlight-color: transparent; }
+
+    /* Fundo: brilhos suaves para o vidro ter o que refratar */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      background:
+        radial-gradient(60vmax 45vmax at 0% 0%, rgba(0, 122, 255, .12), transparent 60%),
+        radial-gradient(50vmax 40vmax at 100% 25%, rgba(175, 82, 222, .09), transparent 60%),
+        radial-gradient(60vmax 45vmax at 85% 100%, rgba(255, 159, 10, .09), transparent 60%);
+    }
+
+    ::selection { background: rgba(0, 122, 255, .2); }
+
+    button {
+      appearance: none;
+      margin: 0;
+      padding: 0;
+      border: 0;
+      background: none;
+      font: inherit;
+      color: inherit;
+      cursor: pointer;
+    }
+
+    :focus-visible { outline: 3px solid rgba(0, 122, 255, .45); outline-offset: 2px; }
+
+    svg { display: block; flex: none; }
+
+    /* ---------- Vidro (controles flutuantes) ---------- */
+    .glass {
+      position: relative;
+      background: rgba(255, 255, 255, .58);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      backdrop-filter: blur(20px) saturate(180%);
+      box-shadow:
+        0 0 0 .5px rgba(0, 0, 0, .06),
+        inset 0 1px 1px rgba(255, 255, 255, .9),
+        0 2px 6px rgba(0, 0, 0, .04),
+        0 10px 30px rgba(0, 0, 0, .08);
+    }
+    .glass::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      padding: 1px;
+      border-radius: inherit;
+      pointer-events: none;
+      background: linear-gradient(160deg, rgba(255, 255, 255, .95), rgba(255, 255, 255, .15) 35%, rgba(255, 255, 255, 0) 60%, rgba(255, 255, 255, .6));
+      -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+    }
+
+    /* ---------- Layout ---------- */
+    .app {
+      width: 100%;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: max(48px, env(safe-area-inset-top)) 20px calc(128px + env(safe-area-inset-bottom));
+    }
+
+    .top {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 16px;
+      margin: 0 4px 24px;
+    }
+    .date {
+      margin: 0 0 2px;
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--secondary);
+    }
+    .date::first-letter { text-transform: uppercase; }
+    h1 {
+      margin: 0;
+      font-size: 40px;
+      line-height: 1.1;
+      font-weight: 700;
+      letter-spacing: -.025em;
+    }
+
+    .pill {
+      height: 36px;
+      padding: 0 16px;
+      border-radius: 999px;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--blue);
+      transition: transform .35s var(--spring);
+    }
+    .pill:active { transform: scale(.93); }
+
+    /* ---------- Cartões (conteúdo) ---------- */
+    .card {
+      background: var(--card);
+      -webkit-backdrop-filter: blur(30px) saturate(160%);
+      backdrop-filter: blur(30px) saturate(160%);
+      border-radius: var(--radius);
+      box-shadow:
+        0 0 0 .5px rgba(0, 0, 0, .05),
+        inset 0 1px 0 rgba(255, 255, 255, .8),
+        0 1px 2px rgba(0, 0, 0, .03),
+        0 12px 32px rgba(0, 0, 0, .05);
+    }
+
+    /* ---------- Destaque: quem fala agora ---------- */
+    .hero { padding: 24px; margin-bottom: 16px; }
+    .hero-meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      color: var(--secondary);
+    }
+    #hero-count { font-variant-numeric: tabular-nums; }
+    .hero[data-state="live"] #hero-label { color: var(--blue); }
+    .hero[data-state="done"] #hero-label { color: var(--green); }
+    .hero-title {
+      margin: 0 0 6px;
+      font-size: clamp(40px, 10vw, 60px);
+      line-height: 1.05;
+      font-weight: 700;
+      letter-spacing: -.035em;
+      overflow-wrap: anywhere;
+    }
+    .hero-sub {
+      margin: 0;
+      font-size: 17px;
+      line-height: 1.4;
+      color: var(--secondary);
+    }
+    .hero-sub strong { font-weight: 600; color: var(--label); }
+
+    .btn-primary {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      height: 52px;
+      margin-top: 24px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, #2a8cff, var(--blue));
+      color: #fff;
+      font-size: 17px;
+      font-weight: 600;
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, .3),
+        0 1px 2px rgba(0, 64, 160, .2),
+        0 8px 20px rgba(0, 122, 255, .25);
+      transition: transform .35s var(--spring), filter .2s;
+    }
+    .btn-primary svg { width: 20px; height: 20px; }
+    .btn-primary:active { transform: scale(.97); filter: brightness(.92); }
+
+    /* ---------- Lista ---------- */
+    .list-card { padding: var(--inset); }
+    .list {
+      position: relative;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    .row { position: relative; }
+
+    .row-btn {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      width: 100%;
+      min-height: 50px;
+      padding: 0 14px;
+      border-radius: calc(var(--radius) - var(--inset));
+      text-align: left;
+      user-select: none;
+      transition: background-color .25s var(--ease);
+    }
+    .is-current .row-btn { background: rgba(0, 122, 255, .08); }
+
+    .badge {
+      display: grid;
+      place-items: center;
+      flex: none;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--fill);
+      color: var(--secondary);
+      font-size: 14px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      transition: background-color .3s var(--ease), color .3s var(--ease);
+    }
+    .badge svg { display: none; width: 15px; height: 15px; }
+    .is-current .badge { background: var(--blue); color: #fff; }
+    .is-done .badge { background: var(--green); color: #fff; }
+    .is-done .badge .num { display: none; }
+    .is-done .badge svg { display: block; }
+
+    .name {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      font-size: 17px;
+      transition: color .3s var(--ease);
+    }
+    .is-current .name { font-weight: 600; }
+    .is-done .name, .is-absent .name { color: var(--tertiary); }
+
+    /* Modo edição */
+    .edit-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-height: 52px;
+      padding: 0 14px;
+    }
+    .minus, .plus {
+      display: grid;
+      place-items: center;
+      flex: none;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      color: #fff;
+      transition: transform .35s var(--spring);
+    }
+    .minus { background: var(--red); }
+    .plus { background: var(--green); }
+    .minus svg, .plus svg { width: 14px; height: 14px; }
+    .minus:active, .plus:active { transform: scale(.85); }
+
+    .switch {
+      position: relative;
+      flex: none;
+      width: 52px;
+      height: 32px;
+      cursor: pointer;
+    }
+    .switch input {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+    .track {
+      position: absolute;
+      inset: 0;
+      border-radius: 999px;
+      background: rgba(120, 120, 128, .16);
+      pointer-events: none;
+      transition: background-color .25s var(--ease);
+    }
+    .track::before {
+      content: "";
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      background: #fff;
+      box-shadow: 0 3px 8px rgba(0, 0, 0, .15), 0 1px 1px rgba(0, 0, 0, .06);
+      transition: transform .4s var(--spring), width .2s var(--ease);
+    }
+    .switch input:checked + .track { background: var(--green); }
+    .switch input:checked + .track::before { transform: translateX(20px); }
+    .switch input:active + .track::before { width: 34px; }
+    .switch input:checked:active + .track::before { transform: translateX(14px); }
+    .switch input:focus-visible + .track { outline: 3px solid rgba(0, 122, 255, .45); outline-offset: 2px; }
+
+    .add-row {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-height: 52px;
+      padding: 0 14px;
+    }
+    .list:not(:empty) + .add-row::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 52px;
+      right: 14px;
+      height: 1px;
+      background: var(--separator);
+    }
+    .add-row input {
+      flex: 1;
+      min-width: 0;
+      height: 44px;
+      padding: 0;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      font: inherit;
+      font-size: 17px;
+      color: var(--label);
+    }
+    .add-row input::placeholder { color: var(--tertiary); }
+
+    .footnote {
+      margin: 12px 20px 0;
+      font-size: 13px;
+      line-height: 1.45;
+      color: var(--secondary);
+    }
+
+    /* ---------- Barra flutuante ---------- */
+    .toolbar {
+      position: fixed;
+      z-index: 10;
+      left: 50%;
+      bottom: max(24px, env(safe-area-inset-bottom));
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      width: max-content;
+      padding: 6px;
+      border-radius: 999px;
+    }
+    .tool {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      height: 44px;
+      min-width: 44px;
+      padding: 0 18px;
+      border-radius: 999px;
+      font-size: 15px;
+      font-weight: 600;
+      white-space: nowrap;
+      transition: background-color .2s var(--ease), transform .35s var(--spring), opacity .2s var(--ease);
+    }
+    .tool.icon { width: 44px; padding: 0; }
+    .tool svg { width: 20px; height: 20px; }
+    .tool:active { transform: scale(.92); background: rgba(0, 0, 0, .08); }
+    .tool:disabled { opacity: .3; cursor: default; pointer-events: none; }
+    .tool-sep { width: 1px; height: 22px; background: var(--separator); }
+
+    @media (hover: hover) {
+      .pill:hover { background: rgba(255, 255, 255, .78); }
+      .row-btn:hover { background: rgba(118, 118, 128, .07); }
+      .is-current .row-btn:hover { background: rgba(0, 122, 255, .12); }
+      .btn-primary:hover { filter: brightness(1.05); }
+      .tool:hover { background: rgba(0, 0, 0, .05); }
+    }
+
+    @media (max-width: 480px) {
+      .app { padding-left: 16px; padding-right: 16px; padding-top: max(32px, env(safe-area-inset-top)); }
+      h1 { font-size: 34px; }
+      .hero { padding: 20px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        transition-duration: .01ms !important;
+        animation-duration: .01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="top">
+      <div>
+        <p class="date" id="date"></p>
+        <h1>Daily</h1>
+      </div>
+      <button type="button" class="pill glass" id="edit-toggle">Editar</button>
+    </header>
+
+    <section class="card hero" id="hero" hidden>
+      <div class="hero-meta" id="hero-meta"><span id="hero-label"></span><span id="hero-count"></span></div>
+      <h2 class="hero-title" id="hero-title" aria-live="polite"></h2>
+      <p class="hero-sub" id="hero-sub"></p>
+      <button type="button" class="btn-primary" id="hero-action" hidden></button>
+    </section>
+
+    <section class="card list-card" id="list-card" hidden>
+      <ol class="list" id="list"></ol>
+      <form class="add-row" id="add-form" autocomplete="off" hidden>
+        <button type="submit" class="plus" aria-label="Adicionar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M12 6v12M6 12h12"/></svg>
+        </button>
+        <input id="add-input" type="text" placeholder="Adicionar pessoa" aria-label="Nome da pessoa" maxlength="40" enterkeyhint="done" spellcheck="false">
+      </form>
+    </section>
+
+    <p class="footnote" id="footnote" hidden></p>
+  </main>
+
+  <nav class="toolbar glass" id="toolbar" aria-label="Ações" hidden>
+    <button type="button" class="tool icon" id="undo" aria-label="Desfazer" title="Desfazer (Ctrl+Z)" disabled>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>
+    </button>
+    <span class="tool-sep" id="tool-sep" aria-hidden="true"></span>
+    <button type="button" class="tool" id="new-daily" title="Sortear uma nova ordem e zerar quem já falou">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 3h5v5"/><path d="M4 20 21 3"/><path d="M21 16v5h-5"/><path d="m15 15 6 6"/><path d="m4 4 5 5"/></svg>
+      <span>Nova daily</span>
+    </button>
+  </nav>
+
+  <script>
+  (() => {
+    'use strict';
+
+    const STORAGE_KEY = 'sort-daily-order:v1';
+    const HISTORY_LIMIT = 100;
+    const MAX_NAME = 40;
+    const ID_RE = /^[a-z0-9]{1,40}$/i;
+    const EASE = 'cubic-bezier(.2, .8, .2, 1)';
+    const SPRING = 'cubic-bezier(.34, 1.56, .64, 1)';
+
+    const svg = (body, width) =>
+      `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
+    const ICON = {
+      check: svg('<path d="M5 12.5l4.5 4.5L19 7.5"/>', 3),
+      minus: svg('<path d="M6 12h12"/>', 3),
+      plus: svg('<path d="M12 6v12M6 12h12"/>', 2.5),
+      checkBold: svg('<path d="M5 12.5l4.5 4.5L19 7.5"/>', 2.5),
+    };
+
+    const $ = (id) => document.getElementById(id);
+    const ui = {
+      date: $('date'),
+      editToggle: $('edit-toggle'),
+      hero: $('hero'),
+      heroMeta: $('hero-meta'),
+      heroLabel: $('hero-label'),
+      heroCount: $('hero-count'),
+      heroTitle: $('hero-title'),
+      heroSub: $('hero-sub'),
+      heroAction: $('hero-action'),
+      listCard: $('list-card'),
+      list: $('list'),
+      addForm: $('add-form'),
+      addInput: $('add-input'),
+      footnote: $('footnote'),
+      toolbar: $('toolbar'),
+      undo: $('undo'),
+      toolSep: $('tool-sep'),
+      newDaily: $('new-daily'),
+    };
+
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const finePointer = window.matchMedia('(pointer: fine)');
+    const motionOk = () => !reduceMotion.matches && typeof Element.prototype.animate === 'function';
+    const dateFmt = new Intl.DateTimeFormat('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+    const listFmt = typeof Intl.ListFormat === 'function'
+      ? new Intl.ListFormat('pt-BR', { style: 'long', type: 'conjunction' })
+      : { format: (items) => items.join(', ') };
+
+    // ---------- Estado ----------
+    // people: time completo · order: ordem sorteada de hoje (só presentes)
+    // done: quem já falou · absent: ausentes hoje · date: dia da daily
+    let storageOk = true;
+    let state = load();
+    let history = [];
+    let editing = state.people.length === 0;
+    let lastHeroKey;
+
+    function todayKey(d = new Date()) {
+      const pad = (n) => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    }
+
+    function emptyState() {
+      return { people: [], order: [], done: [], absent: [], date: todayKey() };
+    }
+
+    function load() {
+      let raw = null;
+      try { raw = localStorage.getItem(STORAGE_KEY); } catch { storageOk = false; }
+      if (raw) {
+        try { return sanitize(JSON.parse(raw)); } catch { /* dado corrompido: começa do zero */ }
+      }
+      return emptyState();
+    }
+
+    function sanitize(data) {
+      const s = emptyState();
+      if (!data || typeof data !== 'object') return s;
+      const known = new Set();
+      for (const p of Array.isArray(data.people) ? data.people : []) {
+        if (!p || typeof p.id !== 'string' || !ID_RE.test(p.id) || known.has(p.id)) continue;
+        const name = typeof p.name === 'string' ? p.name.replace(/\s+/g, ' ').trim().slice(0, MAX_NAME) : '';
+        if (!name) continue;
+        known.add(p.id);
+        s.people.push({ id: p.id, name });
+      }
+      const ids = (arr) => [...new Set((Array.isArray(arr) ? arr : []).filter((id) => known.has(id)))];
+      s.absent = ids(data.absent);
+      const absent = new Set(s.absent);
+      s.order = ids(data.order).filter((id) => !absent.has(id));
+      for (const p of s.people) {
+        if (!absent.has(p.id) && !s.order.includes(p.id)) s.order.push(p.id);
+      }
+      const present = new Set(s.order);
+      s.done = ids(data.done).filter((id) => present.has(id));
+      if (typeof data.date === 'string') s.date = data.date;
+      return s;
+    }
+
+    function save() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        storageOk = true;
+      } catch {
+        storageOk = false;
+      }
+    }
+
+    // ---------- Utilitários ----------
+    const without = (arr, id) => arr.filter((x) => x !== id);
+    const randomInt = (n) => Math.floor(Math.random() * n);
+    const newId = () => 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+    const nameOf = (id) => state.people.find((p) => p.id === id)?.name ?? '';
+    const normalize = (name) => name.toLocaleLowerCase('pt-BR');
+
+    function shuffle(arr) {
+      const a = arr.slice();
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = randomInt(i + 1);
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    function currentIndex() {
+      const done = new Set(state.done);
+      return state.order.findIndex((id) => !done.has(id));
+    }
+
+    function nextIndex(from) {
+      const done = new Set(state.done);
+      return state.order.findIndex((id, i) => i > from && !done.has(id));
+    }
+
+    // Quem entra no meio da daily cai numa posição aleatória entre quem ainda não falou,
+    // sem passar na frente de quem está falando agora.
+    function insertPending(id) {
+      const cur = currentIndex();
+      const start = state.done.length === 0 ? 0 : cur === -1 ? state.order.length : cur + 1;
+      state.order.splice(start + randomInt(state.order.length - start + 1), 0, id);
+    }
+
+    // ---------- Ações ----------
+    const actions = {
+      add(name) {
+        const id = newId();
+        state.people.push({ id, name });
+        insertPending(id);
+      },
+      remove(id) {
+        state.people = state.people.filter((p) => p.id !== id);
+        state.order = without(state.order, id);
+        state.done = without(state.done, id);
+        state.absent = without(state.absent, id);
+      },
+      setPresent(id, present) {
+        const isAbsent = state.absent.includes(id);
+        if (present === !isAbsent) return;
+        if (present) {
+          state.absent = without(state.absent, id);
+          insertPending(id);
+        } else {
+          state.absent.push(id);
+          state.order = without(state.order, id);
+          state.done = without(state.done, id);
+        }
+      },
+      toggleDone(id) {
+        if (!state.order.includes(id)) return;
+        state.done = state.done.includes(id) ? without(state.done, id) : [...state.done, id];
+      },
+      completeCurrent() {
+        const i = currentIndex();
+        if (i !== -1) state.done.push(state.order[i]);
+      },
+      newDaily() {
+        const prev = state.order.join();
+        let next = shuffle(state.order);
+        // Garante que a ordem mude visivelmente quando houver mais de uma pessoa.
+        for (let tries = 0; next.length > 1 && next.join() === prev && tries < 20; tries++) {
+          next = shuffle(state.order);
+        }
+        state.order = next;
+        state.done = [];
+      },
+    };
+
+    function commit(mutate) {
+      const snapshot = JSON.stringify(state);
+      mutate();
+      if (JSON.stringify(state) === snapshot) return;
+      history.push(snapshot);
+      if (history.length > HISTORY_LIMIT) history.shift();
+      save();
+      render();
+    }
+
+    function undo() {
+      const snapshot = history.pop();
+      if (snapshot === undefined) return;
+      state = sanitize(JSON.parse(snapshot));
+      save();
+      render();
+    }
+
+    // Em um novo dia: nova ordem, ninguém concluído e ausências zeradas.
+    function ensureToday() {
+      const today = todayKey();
+      if (state.date === today) return false;
+      state.date = today;
+      state.absent = [];
+      state.order = shuffle(state.people.map((p) => p.id));
+      state.done = [];
+      history = [];
+      save();
+      return true;
+    }
+
+    function submitName() {
+      const name = ui.addInput.value.replace(/\s+/g, ' ').trim().slice(0, MAX_NAME);
+      if (!name) return true;
+      if (state.people.some((p) => normalize(p.name) === normalize(name))) {
+        if (motionOk()) {
+          ui.addForm.animate(
+            [0, -7, 7, -5, 5, -2, 0].map((x) => ({ transform: `translateX(${x}px)` })),
+            { duration: 420, easing: 'ease-out' },
+          );
+        }
+        ui.addInput.select();
+        return false;
+      }
+      ui.addInput.value = '';
+      commit(() => actions.add(name));
+      return true;
+    }
+
+    function setEditing(on) {
+      if (on === editing) return;
+      if (!on && !submitName()) return;
+      editing = on;
+      render();
+      if (on && finePointer.matches) ui.addInput.focus();
+    }
+
+    // ---------- Renderização ----------
+    function render() {
+      const focusKey = document.activeElement?.dataset?.focus;
+      const done = new Set(state.done);
+      const ci = currentIndex();
+
+      ui.date.textContent = dateFmt.format(new Date());
+      ui.editToggle.textContent = editing ? 'OK' : 'Editar';
+      ui.editToggle.hidden = !editing && state.people.length === 0;
+
+      renderHero(ci, done);
+      renderList(ci, done);
+      ui.listCard.hidden = !editing && state.order.length === 0;
+      ui.addForm.hidden = !editing;
+      renderFootnote();
+
+      ui.undo.disabled = history.length === 0;
+      ui.newDaily.hidden = editing || state.order.length === 0;
+      ui.toolSep.hidden = ui.newDaily.hidden;
+      ui.toolbar.hidden = ui.newDaily.hidden && history.length === 0;
+
+      // Elementos recriados/movidos perdem o foco; devolve para o equivalente.
+      if (focusKey && (document.activeElement === document.body || !document.activeElement)) {
+        document.querySelector(`[data-focus="${CSS.escape(focusKey)}"]`)?.focus({ preventScroll: true });
+      }
+    }
+
+    function renderHero(ci, done) {
+      ui.hero.hidden = editing;
+      if (editing) return;
+
+      const total = state.order.length;
+      let view;
+      if (!state.people.length) {
+        view = { state: 'empty', key: 'empty', title: 'Monte o time', sub: 'Adicione quem participa da daily para sortear a ordem.', action: 'edit' };
+      } else if (!total) {
+        view = { state: 'absent', key: 'absent', title: 'Ninguém presente', sub: 'Todo o time está marcado como ausente hoje.' };
+      } else if (ci === -1) {
+        view = { state: 'done', key: 'done', label: 'Concluída', count: `${total} de ${total}`, title: 'Todo mundo falou', sub: 'Até a próxima daily.' };
+      } else {
+        const id = state.order[ci];
+        const ni = nextIndex(ci);
+        let sub = 'Última pessoa da daily.';
+        if (ni !== -1) {
+          const strong = document.createElement('strong');
+          strong.textContent = nameOf(state.order[ni]);
+          sub = ['A seguir: ', strong];
+        }
+        view = { state: 'live', key: id, label: 'Agora', count: `${done.size + 1} de ${total}`, title: nameOf(id), sub, action: 'complete' };
+      }
+
+      ui.hero.dataset.state = view.state;
+      ui.heroMeta.hidden = !view.label;
+      ui.heroLabel.textContent = view.label || '';
+      ui.heroCount.textContent = view.count || '';
+      ui.heroTitle.textContent = view.title;
+      ui.heroSub.replaceChildren(...[].concat(view.sub));
+
+      ui.heroAction.hidden = !view.action;
+      if (view.action && ui.heroAction.dataset.action !== view.action) {
+        ui.heroAction.dataset.action = view.action;
+        ui.heroAction.dataset.focus = 'hero-' + view.action;
+        if (view.action === 'complete') {
+          ui.heroAction.innerHTML = `${ICON.checkBold}<span>Concluir</span>`;
+          ui.heroAction.title = 'Atalho: → ou espaço';
+        } else {
+          ui.heroAction.innerHTML = `${ICON.plus}<span>Adicionar pessoas</span>`;
+          ui.heroAction.removeAttribute('title');
+        }
+      }
+
+      if (lastHeroKey !== undefined && lastHeroKey !== view.key && motionOk()) {
+        ui.heroTitle.animate(
+          [
+            { opacity: 0, transform: 'translateY(10px)', filter: 'blur(6px)' },
+            { opacity: 1, transform: 'none', filter: 'blur(0)' },
+          ],
+          { duration: 450, easing: EASE },
+        );
+        ui.heroSub.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 450, delay: 80, easing: EASE, fill: 'backwards' });
+      }
+      lastHeroKey = view.key;
+    }
+
+    function renderList(ci, done) {
+      const items = editing
+        ? state.people.map((p) => ({
+            key: 'e-' + p.id, kind: 'edit', id: p.id, name: p.name, absent: state.absent.includes(p.id),
+          }))
+        : state.order.map((id, i) => ({
+            key: 'o-' + id, kind: 'order', id, name: nameOf(id), n: i + 1, done: done.has(id), current: i === ci,
+          }));
+
+      const list = ui.list;
+      const animate = motionOk();
+      const existing = new Map();
+      const before = new Map();
+      for (const li of list.children) {
+        existing.set(li.dataset.key, li);
+        if (animate) before.set(li.dataset.key, li.offsetTop);
+      }
+
+      const keep = new Set(items.map((it) => it.key));
+      for (const [key, li] of existing) if (!keep.has(key)) li.remove();
+
+      items.forEach((it, i) => {
+        let li = existing.get(it.key);
+        const isNew = !li;
+        if (isNew) li = createRow(it);
+        patchRow(li, it, isNew && animate);
+        const at = list.children[i];
+        if (at !== li) list.insertBefore(li, at || null);
+      });
+
+      if (!animate) return;
+      // FLIP: anima cada linha da posição antiga até a nova.
+      for (const li of list.children) {
+        const prev = before.get(li.dataset.key);
+        if (prev === undefined) {
+          if (before.size || editing) {
+            li.animate([{ opacity: 0, transform: 'scale(.97)' }, { opacity: 1, transform: 'none' }], { duration: 320, easing: EASE });
+          }
+          continue;
+        }
+        const dy = prev - li.offsetTop;
+        if (dy) {
+          li.animate([{ transform: `translateY(${dy}px)` }, { transform: 'none' }], { duration: 520, easing: EASE });
+        }
+      }
+    }
+
+    function createRow(it) {
+      const li = document.createElement('li');
+      li.dataset.key = it.key;
+      if (it.kind === 'order') {
+        li.className = 'row';
+        li.innerHTML =
+          `<button type="button" class="row-btn" data-action="toggle">` +
+            `<span class="badge" aria-hidden="true"><span class="num"></span>${ICON.check}</span>` +
+            `<span class="name"></span>` +
+          `</button>`;
+      } else {
+        li.className = 'row edit-row';
+        li.innerHTML =
+          `<button type="button" class="minus" data-action="remove">${ICON.minus}</button>` +
+          `<span class="name"></span>` +
+          `<label class="switch"><input type="checkbox" role="switch" data-action="presence"><span class="track" aria-hidden="true"></span></label>`;
+      }
+      return li;
+    }
+
+    function patchRow(li, it, isNew) {
+      const name = li.querySelector('.name');
+      if (name.textContent !== it.name) name.textContent = it.name;
+
+      if (it.kind === 'order') {
+        const wasDone = li.classList.contains('is-done');
+        li.classList.toggle('is-done', it.done);
+        li.classList.toggle('is-current', it.current);
+        const btn = li.firstElementChild;
+        btn.dataset.id = it.id;
+        btn.dataset.focus = 't-' + it.id;
+        btn.setAttribute('aria-pressed', String(it.done));
+        if (it.current) btn.setAttribute('aria-current', 'step');
+        else btn.removeAttribute('aria-current');
+        li.querySelector('.num').textContent = it.n;
+        if (!isNew && it.done && !wasDone && motionOk()) {
+          li.querySelector('.badge').animate(
+            [{ transform: 'scale(.6)' }, { transform: 'scale(1)' }],
+            { duration: 500, easing: SPRING },
+          );
+        }
+      } else {
+        li.classList.toggle('is-absent', it.absent);
+        const remove = li.querySelector('.minus');
+        remove.dataset.id = it.id;
+        remove.dataset.focus = 'r-' + it.id;
+        remove.setAttribute('aria-label', `Remover ${it.name}`);
+        const toggle = li.querySelector('input');
+        toggle.dataset.id = it.id;
+        toggle.dataset.focus = 's-' + it.id;
+        toggle.checked = !it.absent;
+        toggle.setAttribute('aria-label', `${it.name} presente hoje`);
+      }
+    }
+
+    function renderFootnote() {
+      const parts = [];
+      if (editing) {
+        parts.push(state.people.length
+          ? 'Desative quem faltou hoje. As ausências valem só para o dia.'
+          : 'Digite um nome e aperte Enter.');
+      } else if (state.absent.length) {
+        parts.push(`Ausentes hoje: ${listFmt.format(state.absent.map(nameOf))}.`);
+      }
+      if (!storageOk) parts.push('Não foi possível salvar neste navegador; os dados se perdem ao fechar a página.');
+      ui.footnote.textContent = parts.join(' ');
+      ui.footnote.hidden = parts.length === 0;
+    }
+
+    // ---------- Eventos ----------
+    document.addEventListener('click', (e) => {
+      const target = e.target.closest('[data-action]');
+      if (!target) return;
+      const { action, id } = target.dataset;
+      if (action === 'toggle') commit(() => actions.toggleDone(id));
+      else if (action === 'remove') commit(() => actions.remove(id));
+      else if (action === 'complete') commit(actions.completeCurrent);
+      else if (action === 'edit') setEditing(true);
+    });
+
+    ui.list.addEventListener('change', (e) => {
+      const input = e.target;
+      if (input.dataset.action === 'presence') {
+        commit(() => actions.setPresent(input.dataset.id, input.checked));
+      }
+    });
+
+    ui.addForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      submitName();
+    });
+
+    ui.editToggle.addEventListener('click', () => setEditing(!editing));
+    ui.undo.addEventListener('click', undo);
+    ui.newDaily.addEventListener('click', () => commit(actions.newDaily));
+
+    document.addEventListener('keydown', (e) => {
+      if (e.repeat) return;
+      const typing = e.target instanceof Element && e.target.matches('input[type="text"], textarea, [contenteditable]');
+      if ((e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'z') {
+        if (typing) return;
+        e.preventDefault();
+        undo();
+        return;
+      }
+      if (editing || typing || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.key === 'ArrowRight' || (e.key === ' ' && e.target === document.body)) {
+        e.preventDefault();
+        commit(actions.completeCurrent);
+      }
+    });
+
+    // Outra aba alterou os dados.
+    window.addEventListener('storage', (e) => {
+      if (e.key !== null && e.key !== STORAGE_KEY) return;
+      state = load();
+      history = [];
+      ensureToday();
+      render();
+    });
+
+    // Página aberta de um dia para o outro.
+    const refreshDay = () => { if (ensureToday()) render(); };
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshDay(); });
+    window.addEventListener('focus', refreshDay);
+    setInterval(refreshDay, 60 * 1000);
+
+    ensureToday();
+    render();
+    if (editing && finePointer.matches) ui.addInput.focus();
+  })();
+  </script>
+</body>
+</html>
